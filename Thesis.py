@@ -231,8 +231,8 @@ def run_all(training_data,training_target,testing_data,testing_target):
 
 #data 1
 def load_data1():
-	mat1 = scipy.io.loadmat('/home/jack/Documents/Thesis/Data/fmri_All.mat')
-	mat2 = scipy.io.loadmat('/home/jack/Documents/Thesis/Data/FA.mat')
+	mat1 = scipy.io.loadmat('E:/Documents/Thesis\Data/fmri_All.mat')
+	mat2 = scipy.io.loadmat('E:/Documents/Thesis\Data/FA.mat')
 	fmri_data = mat1['c']
 	fa_data = mat2['fa']
 	return fmri_data,fa_data
@@ -313,7 +313,7 @@ def data1_subgroups(fmri_all,fa_all,merged_all):
 
 #data 2
 def load_data2():
-	fn = '/home/jack/Documents/Thesis/Data/ttest feature.mat'
+	fn = 'E:/Documents/Thesis/Data/ttest feature.mat'
 	mat = scipy.io.loadmat(fn)
 	FA = mat['fa2']
 	ALFF = mat['alff2']
