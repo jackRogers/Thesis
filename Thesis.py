@@ -8,6 +8,8 @@
 #to do
 
 #allow comparison between ica and pca with differnt amounts of components
+#confusion matrix
+#lda scatter plots
 
 
 
@@ -16,7 +18,8 @@
 ######################
 import math
 import numpy
-import scipy.io  										#to load in the mat file
+import scipy.io  
+import sklearn										#to load in the mat file
 
 
 from sklearn import decomposition  						#import decomposition for PCA
@@ -313,11 +316,11 @@ def data1_subgroups(fmri_all,fa_all,merged_all):
 
 #data 2
 def load_data2():
-	fn = 'E:/Documents/Thesis/Data/ttest feature.mat'
+	fn = 'E:/Documents/Thesis/Data/Second_data.mat'
 	mat = scipy.io.loadmat(fn)
-	FA = mat['fa2']
-	ALFF = mat['alff2']
-	GM = mat['gm2']
+	FA = mat['FA']
+	ALFF = mat['ALFF']
+	GM = mat['GM2']
 	return FA,ALFF,GM
 	
 def make_control_data2(data):
@@ -339,7 +342,7 @@ def make_two_group_target_data2():
 		for i in range(28):
 			x.append(0)
 		for i in range(35):
-			x.append(i)
+			x.append(1)
 		return numpy.array(x)
 
 def data2_unpack():
@@ -402,6 +405,99 @@ def data2_subgroups(FA,ALFF,GM,ALL):
 	ALL_control = horzcat(FA_ALFF_control,GM_control)
 	ALL_schizophrenia = horzcat(FA_ALFF_schizophrenia,GM_schizophrenia)
 	return FA_control,FA_schizophrenia,ALFF_control,ALFF_schizophrenia,GM_control,GM_schizophrenia,FA_ALFF_control,FA_ALFF_schizophrenia,FA_GM_control,FA_GM_schizophrenia,ALFF_GM_control,ALFF_GM_schizophrenia,ALL_control,ALL_schizophrenia
+
+#data 2
+def load_data3():
+	fn = 'E:/Documents/Thesis/Data/ttest_feature.mat'
+	mat = scipy.io.loadmat(fn)
+	FA = mat['fa2']
+	ALFF = mat['alff2']
+	GM = mat['gm2']
+	return FA,ALFF,GM
+	
+def make_control_data3(data):
+	x = []
+	for i in data[:28]:
+		x.append(i)
+	control = numpy.array(x)
+	return control
+	
+def make_schizophrenia_data3(data):
+	x = []
+	for i in data[28:]:
+		x.append(i)
+	schizophrenia = numpy.array(x)
+	return schizophrenia
+	
+def make_two_group_target_data3():
+		x = []
+		for i in range(28):
+			x.append(0)
+		for i in range(35):
+			x.append(1)
+		return numpy.array(x)
+
+def data3_unpack():
+	FA,ALFF,GM = load_data3()
+	target = make_two_group_target_data2()
+	ALL = horzcat(horzcat(FA,ALFF),GM)
+	return FA,ALFF,GM,target,ALL
+
+def data3_lda(FA,ALFF,GM,target,ALL):
+	lda_FA = reduce_LDA(FA,target)
+	lda_ALFF = reduce_LDA(ALFF,target)
+	lda_GM = reduce_LDA(GM,target)
+	lda_ALL = reduce_LDA(ALL,target)
+	return lda_FA,lda_ALFF,lda_GM,lda_ALL
+	
+def data3_ica(FA,ALFF,GM,target,ALL,components):
+	ica_FA = reduce_ica(FA,target,components)
+	ica_ALFF = reduce_ica(ALFF,target,components)
+	ica_GM = reduce_ica(GM,target,components)
+	ica_ALL = reduce_ica(ALL,target,components)
+	return ica_FA,ica_ALFF,ica_GM,ica_ALL
+	
+def data3_pca(FA,ALFF,GM,target,ALL,components):
+	FA = FA.byteswap().newbyteorder()
+	GM = GM.byteswap().newbyteorder()
+	ALFF = ALFF.byteswap().newbyteorder()
+	ALL = ALL.byteswap().newbyteorder()
+	pca_FA = reduce_pca(FA,target,components)
+	pca_ALFF = reduce_pca(ALFF,target,components)
+	pca_GM = reduce_pca(GM,target,components)
+	pca_ALL = reduce_pca(ALL,target,components)
+	return pca_FA,pca_ALFF,pca_GM,pca_ALL
+
+def data3_subgroups(FA,ALFF,GM,ALL):
+	#FA
+	FA_control = make_control_data2(FA)
+	FA_schizophrenia = make_schizophrenia_data2(FA)
+	
+	#ALFF
+	ALFF_control = make_control_data2(ALFF)
+	ALFF_schizophrenia = make_schizophrenia_data2(ALFF)
+	
+	#GM
+	GM_control = make_control_data2(GM)
+	GM_schizophrenia = make_schizophrenia_data2(GM)
+	
+	#FA_ALFF
+	FA_ALFF_control = horzcat(FA_control,ALFF_control)
+	FA_ALFF_schizophrenia = horzcat(FA_schizophrenia,ALFF_schizophrenia)
+	
+	#FA_GM
+	FA_GM_control = horzcat(FA_control,GM_control)
+	FA_GM_schizophrenia = horzcat(FA_schizophrenia,GM_schizophrenia)
+	
+	#ALFF_GM
+	ALFF_GM_control = horzcat(ALFF_control,GM_control)
+	ALFF_GM_schizophrenia = horzcat(ALFF_schizophrenia,GM_schizophrenia)
+	
+	#ALL
+	ALL_control = horzcat(FA_ALFF_control,GM_control)
+	ALL_schizophrenia = horzcat(FA_ALFF_schizophrenia,GM_schizophrenia)
+	return FA_control,FA_schizophrenia,ALFF_control,ALFF_schizophrenia,GM_control,GM_schizophrenia,FA_ALFF_control,FA_ALFF_schizophrenia,FA_GM_control,FA_GM_schizophrenia,ALFF_GM_control,ALFF_GM_schizophrenia,ALL_control,ALL_schizophrenia
+
 
 ################################
 ### DEFINE TESTING FUNCTIONS ###
@@ -695,23 +791,43 @@ def main_all():
 	n,p,c = get_inputs()
 	
 	fmri,fa,merged,target = data1_unpack()
-#	test_data1(n,p,fmri,fa,merged)
+	print '\nDataset 1\tNo Transform'
+	test_data1(n,p,fmri,fa,merged)
 	fmri_lda,fa_lda,merged_lda = data1_lda(fmri,fa,merged,target)
+	print '\nDataset 1\tLinear Discriminant Analysis\n'
 	test_data1(n,p,fmri_lda,fa_lda,merged_lda)
 	fmri_ica,fa_ica,merged_ica = data1_ica(fmri,fa,merged,target,c)
+	print '\nDataset 1\tIndependent Component Analysis'
 	test_data1(n,p,fmri_ica,fa_ica,merged_ica)
 	fmri_pca,fa_pca,merged_pca = data1_pca(fmri,fa,merged,target,c)
+	print '\nDataset 1\tPrincipal Component Analysis'
 	test_data1(n,p,fmri_pca,fa_pca,merged_pca)
 	
 	FA,ALFF,GM,target,ALL = data2_unpack()
-#	test_data2(n,p,FA,ALFF,GM,ALL)
+	print '\nDataset 2\tNo Transform'
+	test_data2(n,p,FA,ALFF,GM,ALL)
 	FA_lda,ALFF_lda,GM_lda,ALL_lda = data2_lda(FA,ALFF,GM,target,ALL)
+	print '\nDataset 2\tLinear Discriminant Analysis\n'
 	test_data2(n,p,FA_lda,ALFF_lda,GM_lda,ALL_lda)
 	FA_ica,ALFF_ica,GM_ica,ALL_ica = data2_ica(FA,ALFF,GM,target,ALL,c)
+	print '\nDataset 2\tIndependent Component Analysis'
 	test_data2(n,p,FA_ica,ALFF_ica,GM_ica,ALL_ica)
-	FA_pca,ALFF_pca,GM_pca,ALL_pca = data2_pca(FA,
-	ALFF,GM,target,ALL,c)
+	FA_pca,ALFF_pca,GM_pca,ALL_pca = data2_pca(FA,ALFF,GM,target,ALL,c)
+	print '\nDataset 2\tPrincipal Component Analysis'
 	test_data2(n,p,FA_pca,ALFF_pca,GM_pca,ALL_pca)
+	
+	FA,ALFF,GM,target,ALL = data3_unpack()
+	print '\nDataset 3\tNo Transform'
+	test_data3(n,p,FA,ALFF,GM,ALL)
+	FA_lda,ALFF_lda,GM_lda,ALL_lda = data3_lda(FA,ALFF,GM,target,ALL)
+	print '\nDataset 3\tLinear Discriminant Analysis\n'
+	test_data3(n,p,FA_lda,ALFF_lda,GM_lda,ALL_lda)
+	FA_ica,ALFF_ica,GM_ica,ALL_ica = data3_ica(FA,ALFF,GM,target,ALL,c)
+	print '\nDataset 3\tIndependent Component Analysis'
+	test_data3(n,p,FA_ica,ALFF_ica,GM_ica,ALL_ica)
+	FA_pca,ALFF_pca,GM_pca,ALL_pca = data3_pca(FA,ALFF,GM,target,ALL,c)
+	print '\nDataset 3\tPrincipal Component Analysis'
+	test_data3(n,p,FA_pca,ALFF_pca,GM_pca,ALL_pca)
 
 def main():
 	print "1 for all non-interactive"
