@@ -247,7 +247,7 @@ def random_sample(A,percent_training_size):
 ##########################
 
 #classifiers
-def run_SVM_linear(training_data,training_target,testing_data,testing_target):
+def svm_linear(training_data,training_target,testing_data,testing_target):
 	"""
 	DESCRIPTION:
 	
@@ -266,7 +266,7 @@ def run_SVM_linear(training_data,training_target,testing_data,testing_target):
 	svc.fit(training_data,training_target)
 	return svc.score(testing_data,testing_target)
 
-def run_SVM_RBF(training_data,training_target,testing_data,testing_target):
+def svm_rbf(training_data,training_target,testing_data,testing_target):
 	"""
 	DESCRIPTION:
 	
@@ -285,7 +285,7 @@ def run_SVM_RBF(training_data,training_target,testing_data,testing_target):
 	svc.fit(training_data,training_target)
 	return svc.score(testing_data,testing_target)
 
-def run_KNN(KNN_Neighbors,training_data,training_target,testing_data,testing_target):
+def knn(KNN_Neighbors,training_data,training_target,testing_data,testing_target):
 	"""
 	DESCRIPTION:
 	
@@ -304,7 +304,7 @@ def run_KNN(KNN_Neighbors,training_data,training_target,testing_data,testing_tar
 	clf.fit(training_data,training_target)
 	return clf.score(testing_data,testing_target)
 
-def run_gaussian_naive_bayes(training_data,training_target,testing_data,testing_target):
+def gnb(training_data,training_target,testing_data,testing_target):
 	"""
 	DESCRIPTION:
 	
@@ -323,7 +323,7 @@ def run_gaussian_naive_bayes(training_data,training_target,testing_data,testing_
 	clf.fit(training_data,training_target)
 	return clf.score(testing_data,testing_target)
 
-def run_bernoulli_naive_bayes(training_data,training_target,testing_data,testing_target):
+def bnb(training_data,training_target,testing_data,testing_target):
 	"""
 	DESCRIPTION:
 	
@@ -342,7 +342,7 @@ def run_bernoulli_naive_bayes(training_data,training_target,testing_data,testing
 	clf.fit(training_data,training_target)
 	return clf.score(testing_data,testing_target)
 	
-def run_logistic_regression(training_data,training_target,testing_data,testing_target):
+def lr(training_data,training_target,testing_data,testing_target):
 	"""
 	DESCRIPTION:
 	
@@ -361,7 +361,7 @@ def run_logistic_regression(training_data,training_target,testing_data,testing_t
 	clf.fit(training_data,training_target)
 	return clf.score(testing_data,testing_target)
 
-def run_random_forest(training_data,training_target,testing_data,testing_target):
+def rf(training_data,training_target,testing_data,testing_target):
 	"""
 	DESCRIPTION:
 	
@@ -381,7 +381,7 @@ def run_random_forest(training_data,training_target,testing_data,testing_target)
 	return clf.score(testing_data,testing_target)
 
 #dimensionality reduction
-def reduce_LDA(components,data,target):
+def lda(components,data,target):
 	"""
 	DESCRIPTION:
 	
@@ -396,10 +396,10 @@ def reduce_LDA(components,data,target):
 	
 	"""
 	
-	lda = LDA(n_components = components)
-	return  lda.fit(data,target).transform(data)
+	Lda = LDA(n_components = components)
+	return  Lda.fit(data,target).transform(data)
 	
-def reduce_pca(components,data,target):
+def pca(components,data,target):
 	"""
 	DESCRIPTION:
 	
@@ -414,10 +414,10 @@ def reduce_pca(components,data,target):
 	
 	"""
 	
-	pca = decomposition.PCA(n_components=components)
-	return pca.fit(data).transform(data)
+	Pca = decomposition.PCA(n_components=components)
+	return Pca.fit(data).transform(data)
 	
-def reduce_ica(components,data,target):
+def ica(components,data,target):
 	"""
 	DESCRIPTION:
 	
@@ -432,17 +432,17 @@ def reduce_ica(components,data,target):
 	
 	"""
 	
-	ica = decomposition.FastICA(n_components=components)
-	return ica.fit(data).transform(data)
+	Ica = decomposition.FastICA(n_components=components)
+	return Ica.fit(data).transform(data)
 
 
 
-#################
-### LOAD DATA ###
-#################
+###############
+### Classes ###
+###############
 
 class Matlab_file():
-	def __init__(self,Dataset_name,modalities,matlab_dict_keys,class_indices):
+	def __init__(self,mat_path,Dataset_name,modalities_and_keys,classes_and_indices):
 		"""
 		DESCRIPTION:
 		
@@ -457,9 +457,11 @@ class Matlab_file():
 		
 		"""
 	
-		self.name = name
-		self.modalities = modalities
-		self.class_indices = class_indices
+		self.mat_path = mat_path
+		self.Dataset_name = Dataset_name
+		self.modalities_and_keys = modalities_and_keys
+		self.class_indices = classes_and_indices
+	
 
 class Dataset():
 	def __init__(self,name,list_of_Matlab_file_objects):
@@ -476,12 +478,153 @@ class Dataset():
 		EXAMPLE USAGE:
 		
 		"""
-	
 		self.name = name
 		self.matlab_files = list_of_matlab_file_objects
-		self.modalities = 
-	
+		self.class_indices = None
+		self.starting_modalities = []
+		self.starting_arrays = []
+		self.modality_dict = {}
+		self.master_target = []
+		
+		#check matlab file cohesion
+		for mat in self.matlab_files:
+			#check that all matlab files have the same number of subjects and same class ordering
+			if self.class_indices == None:
+				self.class_indices = mat.class_indices
+			else:
+				if self.class_indices == mat.class_indices:
+					pass
+				else:
+					raise ValueError("Matlab files have differnt class indices")
+			
+			#check that modality is new and not overlapping
+			#check that all matlab files have the same dataset name
+			#load in new file
+			self.load_arrays(mat)
+			self.make_combos()
+			self.make_master_target()
+			
+		def load_initial_modalities(self,matlab_object):
+			mat_dict = scipy.io.loadmat(matlab_object.mat_path)
+			for mod in matlab_object.modalities_and_keys:
+				self.starting_modalities.append(mod[0])
+				self.starting_arrays.append(mat_dict[mod[1]])
+				
+		def make_combos(self):
+			for i in self.starting_modalities: 
+				if len(self.modality_dict.keys()) == 0:
+					self.modality_dict[i] = self.starting_arrays[i]
+				else:
+					for j in self.modality_dict.keys():
+						self.modality_dict[i+'+'+j] = horzcat(self.starting_arrays[i],modality_dict[j])
+					self.modality_dict[i] = self.starting_arrays[i]
+		
+		def make_master_target(self):
+			for i in range(len(self.class_indices)):
+				title = self.class_indices[i][0]
+				for j in range(self.class_indices[i][1]):
+					self.master_target.append(title)
 
+class Parameters():
+	def __init__(self):
+		#user defined
+		self.N = 1
+		self.preprocessing_components = []
+		self.percent_training_sizes = []
+		self.classifier_parameters = []
+		
+		#hardcoded
+		self.preprocessing_algorithms = []
+		self.classifiers = []
+	
+class Experiment():
+	def __init__(self,dataset_object,params):
+		self.params = params
+		self.dataset_object = dataset_object
+		self.result_dict = {}
+		#for N iterations
+		for n in range(N):
+			
+			for pre_algo in preprocessing_algorithms:
+				
+				
+				#for a range of preprocessing components
+				for component in params.preprocessing_components:
+					
+					#for each modality
+					for modality in dataset_object.modality_dict.keys():
+						#preprocess with component set properly
+						preprocessed_unsampled_data = eval(pre_algo(component,dataset_object.modality_dict[modality],dataset_object.master_target))
+						
+						#for each percent_training_size
+						for p in params.percent_training_sizes:
+							self.create_new_sample(preprocessed_unsampled_data,
+							
+							#for each of the algorithms
+							for classifier in params.classifiers:
+								score = eval(classifier(training_data,training_target,testing_data,testing_target))
+								#if particular algo is used
+								#for classifier_param in self.classifier_parameters:
+								
+								
+	def break_into_class_groups(self,unsampled_data):
+		groups = {}
+		for i in range(len(self.dataset_object.class_indices)):
+			groups[self.dataset_object.class_indices[i][0]] = []
+			
+			if i == 1:
+				for subject in range(self.dataset_object.class_indices[i]):
+					groups[self.dataset_object.class_indices[i]].append(unsampled_data[subject])
+			else:
+				for subject in range(self.dataset_object.class_indices[i-1],self.dataset_object.class_indices[i]):
+					groups[self.dataset_object.class_indices[i]].append(unsampled_data[subject])
+			return groups
+									
+	def create_new_sample(self,unsampled_data,modality,p):
+		
+		groups = self.break_into_class_groups(unsampled_data)
+		
+			
+			
+			
+		
+				
+		
+		
+
+
+##############################
+### MAIN TESTING FUNCTIONS ###
+##############################
+
+def test_main():
+	#get inputs
+	
+	#Dataset A make matlab objects
+	Dataset_A_mat1_path = 'E:/Documents/Thesis/Data/fmri_All.mat'
+	Dataset_A_mat1_modalities_and_dict_keys = [('FMRI','c')]
+	Dataset_A_mat1_class_order_and_amounts = [('Healthy Control',62),('Schizophrenia Subject',54),('Bipolar Disorder Subject',48)]
+	Dataset_A_Data_file_1 = Matlab_file(Dataset_A_mat1_path,Dataset_A_mat1_modalities_and_dict_keys,Dataset_A_mat1_class_order_and_amounts)
+	
+	Dataset_A_mat2_path = 'E:/Documents/Thesis/Data/FA.mat'
+	Dataset_A_mat2_modalities_and_dict_keys = [('FA','fa')]
+	Dataset_A_mat2_class_order_and_amounts = [('Healthy Control',62),('Schizophrenia Subject',54),('Bipolar Disorder Subject',48)]
+	Dataset_A_Data_file_2 = Matlab_file(Dataset_A_mat2_path,Dataset_A_mat2_modalities_and_dict_keys,Dataset_A_mat2_class_order_and_amounts)
+	
+	#Dataset A	make dataset objects
+	Dataset_A_Dataset_name = 'Dataset A'
+	Dataset_A_Dataset_matlab_files = [Dataset_A_Data_file_1,Dataset_A_Data_file_2]
+	Dataset_A = Dataset(Dataset_A_Dataset_name,Dataset_A_Dataset_matlab_files)
+	
+	#Dataset B make matlab objects
+	
+	#Dataset B	make dataset objects
+	
+	#make experiment object
+	Experiment_A = Experiment(Dataset_A)
+	
+	#make results object
+	pass
 	
 ##################
 ### UNIT TESTS ###
@@ -536,7 +679,4 @@ class TestFunctions(unittest.TestCase):
 	#reduce_pca
 	
 	#reduce_ica
-	
-	#load_dataset
-	
 	
