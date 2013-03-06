@@ -502,12 +502,38 @@ class Dataset():
 			self.make_master_target()
 			
 	def load_initial_modalities(self,matlab_object):
+		"""
+		DESCRIPTION:
+		
+		
+		INPUTS:
+		
+		
+		OUTPUTS:
+		
+		
+		EXAMPLE USAGE:
+		
+		"""
 		mat_dict = scipy.io.loadmat(matlab_object.mat_path)
 		for mod in matlab_object.modalities_and_keys:
 			self.starting_modalities.append(mod[0])
 			self.starting_arrays.append(mat_dict[mod[1]])
 			
 	def make_combos(self):
+		"""
+		DESCRIPTION:
+		
+		
+		INPUTS:
+		
+		
+		OUTPUTS:
+		
+		
+		EXAMPLE USAGE:
+		
+		"""
 		for i in self.starting_modalities: 
 			if len(self.modality_dict.keys()) == 0:
 				self.modality_dict[i] = self.starting_arrays[self.starting_modalities.index(i)]
@@ -524,6 +550,19 @@ class Dataset():
 
 class Parameters():
 	def __init__(self):
+		"""
+		DESCRIPTION:
+		
+		
+		INPUTS:
+		
+		
+		OUTPUTS:
+		
+		
+		EXAMPLE USAGE:
+		
+		"""
 		#user defined
 		self.N = 1
 		self.preprocessing_components = [2,3,4,5,6,7]
@@ -536,6 +575,19 @@ class Parameters():
 	
 class Experiment():
 	def __init__(self,dataset_object,params = None):
+		"""
+		DESCRIPTION:
+		
+		
+		INPUTS:
+		
+		
+		OUTPUTS:
+		
+		
+		EXAMPLE USAGE:
+		
+		"""
 		if params == None:
 			self.params = Parameters()
 		else:
@@ -569,6 +621,19 @@ class Experiment():
 								
 								
 	def break_into_class_groups(self,unsampled_data):
+		"""
+		DESCRIPTION:
+		
+		
+		INPUTS:
+		
+		
+		OUTPUTS:
+		
+		
+		EXAMPLE USAGE:
+		
+		"""
 		groups = {}
 		subject_counter = 0
 		for i in range(len(self.dataset_object.class_indices)):
@@ -585,6 +650,19 @@ class Experiment():
 		return groups
 									
 	def create_new_sample(self,unsampled_data,p):
+		"""
+		DESCRIPTION:
+		
+		
+		INPUTS:
+		
+		
+		OUTPUTS:
+		
+		
+		EXAMPLE USAGE:
+		
+		"""
 		training = []
 		testing = []
 		groups = self.break_into_class_groups(unsampled_data)
@@ -631,6 +709,19 @@ class Experiment():
 ##############################
 
 def test_main():
+	"""
+	DESCRIPTION:
+	
+	
+	INPUTS:
+	
+	
+	OUTPUTS:
+	
+	
+	EXAMPLE USAGE:
+	
+	"""
 	#get inputs
 	
 	#Dataset A make matlab objects
@@ -666,7 +757,7 @@ test_main()
 
 
 class TestFunctions(unittest.TestCase):
-
+	
 	#def cellular_example_test(self):
 		#"""Tests one_tick() removing the tasks and destinations of cells done stopping."""
 		#c = Cell(0,0)
