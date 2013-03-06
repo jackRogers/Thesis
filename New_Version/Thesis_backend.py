@@ -50,19 +50,19 @@ from sklearn.ensemble import RandomForestClassifier 	#import random forests
 
 from sklearn.cross_validation import cross_val_score	#import cross validation
 
-	"""
-	DESCRIPTION:
-	
-	
-	INPUTS:
-	
-	
-	OUTPUTS:
-	
-	
-	EXAMPLE USAGE:
-	
-	"""
+"""
+DESCRIPTION:
+
+
+INPUTS:
+
+
+OUTPUTS:
+
+
+EXAMPLE USAGE:
+
+"""
 
 	
 
@@ -238,9 +238,7 @@ def random_sample(A,percent_training_size):
 	start = int(start)
 	Train = shuffled[:start]
 	Test = shuffled[start:]
-	TrainSize = len(Train)
-	TestSize = len(Test)
-	return Train,Test,TrainSize,TestSize
+	return Train,Test
 
 ##########################
 ### DEFINE CLASSIFIERS ###
@@ -442,7 +440,7 @@ def ica(components,data,target):
 ###############
 
 class Matlab_file():
-	def __init__(self,mat_path,Dataset_name,modalities_and_keys,classes_and_indices):
+	def __init__(self,mat_path,modalities_and_keys,classes_and_indices):
 		"""
 		DESCRIPTION:
 		
@@ -458,7 +456,6 @@ class Matlab_file():
 		"""
 	
 		self.mat_path = mat_path
-		self.Dataset_name = Dataset_name
 		self.modalities_and_keys = modalities_and_keys
 		self.class_indices = classes_and_indices
 	
@@ -479,7 +476,7 @@ class Dataset():
 		
 		"""
 		self.name = name
-		self.matlab_files = list_of_matlab_file_objects
+		self.matlab_files = list_of_Matlab_file_objects
 		self.class_indices = None
 		self.starting_modalities = []
 		self.starting_arrays = []
@@ -500,90 +497,126 @@ class Dataset():
 			#check that modality is new and not overlapping
 			#check that all matlab files have the same dataset name
 			#load in new file
-			self.load_arrays(mat)
+			self.load_initial_modalities(mat)
 			self.make_combos()
 			self.make_master_target()
 			
-		def load_initial_modalities(self,matlab_object):
-			mat_dict = scipy.io.loadmat(matlab_object.mat_path)
-			for mod in matlab_object.modalities_and_keys:
-				self.starting_modalities.append(mod[0])
-				self.starting_arrays.append(mat_dict[mod[1]])
-				
-		def make_combos(self):
-			for i in self.starting_modalities: 
-				if len(self.modality_dict.keys()) == 0:
-					self.modality_dict[i] = self.starting_arrays[i]
-				else:
-					for j in self.modality_dict.keys():
-						self.modality_dict[i+'+'+j] = horzcat(self.starting_arrays[i],modality_dict[j])
-					self.modality_dict[i] = self.starting_arrays[i]
-		
-		def make_master_target(self):
-			for i in range(len(self.class_indices)):
-				title = self.class_indices[i][0]
-				for j in range(self.class_indices[i][1]):
-					self.master_target.append(title)
+	def load_initial_modalities(self,matlab_object):
+		mat_dict = scipy.io.loadmat(matlab_object.mat_path)
+		for mod in matlab_object.modalities_and_keys:
+			self.starting_modalities.append(mod[0])
+			self.starting_arrays.append(mat_dict[mod[1]])
+			
+	def make_combos(self):
+		for i in self.starting_modalities: 
+			if len(self.modality_dict.keys()) == 0:
+				self.modality_dict[i] = self.starting_arrays[self.starting_modalities.index(i)]
+			else:
+				for j in self.modality_dict.keys():
+					self.modality_dict[i+'+'+j] = horzcat(self.starting_arrays[self.starting_modalities.index(i)],self.modality_dict[j])
+				self.modality_dict[i] = self.starting_arrays[self.starting_modalities.index(i)]
+	
+	def make_master_target(self):
+		for i in range(len(self.class_indices)):
+			title = self.class_indices[i][0]
+			for j in range(self.class_indices[i][1]):
+				self.master_target.append(title)
 
 class Parameters():
 	def __init__(self):
 		#user defined
 		self.N = 1
-		self.preprocessing_components = []
-		self.percent_training_sizes = []
-		self.classifier_parameters = []
+		self.preprocessing_components = [2,3,4,5,6,7]
+		self.percent_training_sizes = [10,20,30,40,50]
+		#self.classifier_parameters = []
 		
 		#hardcoded
-		self.preprocessing_algorithms = []
-		self.classifiers = []
+		self.preprocessing_algorithms = ['lda','pca','ica']
+		self.classifiers = ['svm_linear','svm_rbf','knn','gnb','bnb','lr','rf']
 	
 class Experiment():
-	def __init__(self,dataset_object,params):
-		self.params = params
+	def __init__(self,dataset_object,params = None):
+		if params == None:
+			self.params = Parameters()
+		else:
+			self.params = params
 		self.dataset_object = dataset_object
 		self.result_dict = {}
 		#for N iterations
-		for n in range(N):
+		for n in range(self.params.N):
 			
-			for pre_algo in preprocessing_algorithms:
+			for pre_algo in self.params.preprocessing_algorithms:
 				
 				
 				#for a range of preprocessing components
-				for component in params.preprocessing_components:
+				for component in self.params.preprocessing_components:
 					
 					#for each modality
-					for modality in dataset_object.modality_dict.keys():
+					for modality in self.dataset_object.modality_dict.keys():
 						#preprocess with component set properly
-						preprocessed_unsampled_data = eval(pre_algo(component,dataset_object.modality_dict[modality],dataset_object.master_target))
+						preprocessed_unsampled_data = eval(pre_algo(component,self.dataset_object.modality_dict[modality],self.dataset_object.master_target))
 						
 						#for each percent_training_size
-						for p in params.percent_training_sizes:
-							self.create_new_sample(preprocessed_unsampled_data,
+						for p in self.params.percent_training_sizes:
+							Train_data,Train_target,Test_data,Test_target = self.create_new_sample(preprocessed_unsampled_data,p)
 							
 							#for each of the algorithms
-							for classifier in params.classifiers:
-								score = eval(classifier(training_data,training_target,testing_data,testing_target))
+							for classifier in self.params.classifiers:
+								score = eval(classifier(Train_data,Train_target,Test_data,Test_target))
+								print score
 								#if particular algo is used
 								#for classifier_param in self.classifier_parameters:
 								
 								
 	def break_into_class_groups(self,unsampled_data):
 		groups = {}
+		subject_counter = 0
 		for i in range(len(self.dataset_object.class_indices)):
 			groups[self.dataset_object.class_indices[i][0]] = []
 			
 			if i == 1:
 				for subject in range(self.dataset_object.class_indices[i]):
-					groups[self.dataset_object.class_indices[i]].append(unsampled_data[subject])
+					groups[self.dataset_object.class_indices[i][0]].append(unsampled_data[subject])
+					subject_counter += 1
 			else:
-				for subject in range(self.dataset_object.class_indices[i-1],self.dataset_object.class_indices[i]):
-					groups[self.dataset_object.class_indices[i]].append(unsampled_data[subject])
-			return groups
+				for subject in range(subject_counter,subject_counter+self.dataset_object.class_indices[i]):
+					groups[self.dataset_object.class_indices[i][0]].append(unsampled_data[subject])
+					subject_counter += 1
+		return groups
 									
-	def create_new_sample(self,unsampled_data,modality,p):
-		
+	def create_new_sample(self,unsampled_data,p):
+		training = []
+		testing = []
 		groups = self.break_into_class_groups(unsampled_data)
+		for i in groups.keys():
+			Train,Test = random_sample(groups[i],p)
+			training.append(Train)
+			testing.append(Test)
 		
+		Train_data = None
+		Train_target = None
+		for i in range(len(training)):
+			target = [i for j in range(len(training[i]))]
+			if Train_target == None:
+				Train_data = training[i]
+				Train_target = target
+			else:
+				Train_data = vertcat(Train_data,training[i])
+				Train_target = vertcat(Train_target,target)
+				
+		Test_data = None	
+		Test_target = None
+		for i in range(len(testing)):
+			target = [i for j in range(len(testing[i]))]
+			if Test_target == None:
+				Test_data = testing[i]
+				Test_target = target
+			else:
+				Test_data = vertcat(Test_data,testing[i])
+				Test_target(vertcat(Test_target,target))
+		return Train_data,Train_target,Test_data,Test_target
+		
+			
 			
 			
 			
@@ -624,7 +657,8 @@ def test_main():
 	Experiment_A = Experiment(Dataset_A)
 	
 	#make results object
-	pass
+
+test_main()
 	
 ##################
 ### UNIT TESTS ###
